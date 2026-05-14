@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Potential field local planner for the Robile navigation stack.
+
+Navigates between waypoints provided by the A* global planner using
+attractive forces toward the goal and repulsive forces from LiDAR-
+detected obstacles.
+"""
 
 import rclpy
 from rclpy.node import Node
@@ -10,6 +16,16 @@ import time
 from tf_transformations import euler_from_quaternion
 
 class LocalPlanner(Node):
+    """ROS2 node implementing potential field local path planning.
+
+    Subscribes:
+        /scan (LaserScan): LiDAR range data for obstacle detection.
+        /odom (Odometry): Robot odometry for position tracking.
+        /path_points (PoseArray): Waypoints from the A* global planner.
+
+    Publishes:
+        /cmd_vel (Twist): Velocity commands for the robot base.
+    """
     def __init__(self):
         super().__init__('local_planner')
         self.create_subscription(LaserScan, 'scan', self.laser_callback, 10)
@@ -52,6 +68,7 @@ class LocalPlanner(Node):
         self.path_index = 0
 
     def follow_path(self):
+        """Execute one step of the potential field path-following loop."""
         if self.is_adjusting_orientation:
             self.adjust_final_orientation()
             return
@@ -113,11 +130,13 @@ class LocalPlanner(Node):
         self.vel_publisher.publish(twist)
 
     def calculate_attractive_force(self, goal_x, goal_y):
+        """Compute attractive force vector pointing toward the goal."""
         force_x = self.k_a * (goal_x - self.position_x)
         force_y = self.k_a * (goal_y - self.position_y)
         return force_x, force_y
 
     def calculate_repulsive_forces(self, msg):
+        """Compute repulsive force from nearby obstacles detected by LiDAR."""
         force_x, force_y, angular_force = 0.0, 0.0, 0.0
         min_force_threshold = 0.1
         
@@ -148,6 +167,7 @@ class LocalPlanner(Node):
         return (force_x, force_y, angular_force)
 
     def calculate_angular_correction(self, goal_x, goal_y):
+        """Compute angular velocity correction to face the goal."""
         goal_dir = math.atan2(goal_y - self.position_y, goal_x - self.position_x)
         angle_diff = self.normalize_angle(goal_dir - self.orientation)
         return self.k_ro * angle_diff
@@ -158,6 +178,7 @@ class LocalPlanner(Node):
         return angle_diff
 
     def adjust_final_orientation(self):
+        """Rotate in place to match the goal orientation after arrival."""
         twist = Twist()
         twist.linear.x = 0.0
         twist.linear.y = 0.0
@@ -179,6 +200,7 @@ class LocalPlanner(Node):
         self.vel_publisher.publish(twist)
 
     def normalize_angle(self, angle):
+        """Wrap angle to the [-pi, pi] range."""
         return math.atan2(math.sin(angle), math.cos(angle))
 
     def determine_rotation_direction(self, goal_orientation):

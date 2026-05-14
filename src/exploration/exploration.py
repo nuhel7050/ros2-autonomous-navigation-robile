@@ -1,3 +1,11 @@
+"""Frontier-based exploration node for autonomous environment mapping.
+
+Detects frontier regions (boundaries between known and unknown space),
+clusters them, selects the nearest reachable frontier, and sends goal
+poses to the A* global planner for navigation. Integrates with SLAM
+to incrementally build a map of the environment.
+"""
+
 import math
 import rclpy
 from rclpy.node import Node

@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""A* global path planner for the Robile autonomous navigation stack.
+
+Subscribes to an OccupancyGrid map and goal/start poses, computes an
+obstacle-free path using A* search with morphological obstacle dilation,
+and publishes the resulting waypoints for the local planner.
+"""
 
 import rclpy
 from rclpy.node import Node
@@ -12,6 +18,17 @@ from scipy.ndimage import binary_dilation
 from tf_transformations import euler_from_quaternion
 
 class GlobalPlanner(Node):
+    """ROS2 node implementing A* global path planning.
+
+    Subscribes:
+        /map (OccupancyGrid): Current occupancy grid from SLAM.
+        /goalpose (PoseStamped): Target goal position.
+        /startpose (PoseStamped): Robot start position.
+
+    Publishes:
+        /path_line (Path): Planned path as a nav_msgs/Path.
+        /path_points (PoseArray): Simplified waypoints for the local planner.
+    """
     def __init__(self):
         super().__init__('global_planner')
         self.create_subscription(OccupancyGrid, '/map', self.map_callback, 10)
@@ -86,12 +103,14 @@ class GlobalPlanner(Node):
         self.get_logger().info(f'A* Path in world frame: {self.path_worldframe}')
 
     def map_to_grid(self, x, y, map_data, msg):
+        """Convert world coordinates to occupancy grid cell indices."""
         mx = int(round((x - map_data['origin']['x']) / map_data['resolution']))
         my = int(round((y - map_data['origin']['y']) / map_data['resolution']))
         self.get_logger().info(f"Position of robot for {msg} on map: x: {mx}, y: {my}")
         return (mx, my)
 
     def grid_to_map(self, path_, map_data):
+        """Convert a list of grid cell indices back to world coordinates."""
         path_new = []
         origin_x = map_data['origin']['x']
         origin_y = map_data['origin']['y']
@@ -103,6 +122,7 @@ class GlobalPlanner(Node):
         return path_new
 
     def simplify_path(self, path):
+        """Remove collinear intermediate points to reduce waypoint count."""
         if not path or len(path) < 3:
             return path
 
@@ -119,6 +139,11 @@ class GlobalPlanner(Node):
         return simplified_path
 
     def a_star_search(self, start, goal, grid):
+        """Run A* search on the occupancy grid from start to goal.
+
+        Uses Euclidean distance as the heuristic and supports
+        8-connected grid neighbors.
+        """
         open_set = []
         heapq.heappush(open_set, (0, start))
         came_from = {}
@@ -142,9 +167,11 @@ class GlobalPlanner(Node):
         return self.reconstruct_path(came_from, start, goal)
 
     def heuristic(self, a, b):
+        """Euclidean distance heuristic between two grid cells."""
         return sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
 
     def get_neighbors(self, pos, grid):
+        """Return traversable 8-connected neighbors of a grid cell."""
         directions = [(-1, -1), (-1, 0), (-1, 1),
                       (0, -1),         (0, 1),
                       (1, -1),  (1, 0),  (1, 1)]
@@ -158,6 +185,7 @@ class GlobalPlanner(Node):
         return neighbors
 
     def reconstruct_path(self, came_from, start, goal):
+        """Backtrack through came_from dict to reconstruct the path."""
         current = goal
         path = []
         while current != start:
