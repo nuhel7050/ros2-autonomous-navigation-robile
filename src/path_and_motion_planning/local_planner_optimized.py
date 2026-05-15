@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Optimized potential field local planner with modular design.
+
+Refactored version of the local planner with separated initialization,
+extracted helper methods for goal checking and speed limiting, and
+improved code readability.
+"""
 
 import rclpy
 from rclpy.node import Node

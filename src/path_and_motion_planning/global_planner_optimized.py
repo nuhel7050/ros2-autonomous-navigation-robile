@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Optimized A* global path planner with modular initialization.
+
+Refactored version of the global planner with separated initialization
+methods, inline path simplification, and streamlined coordinate conversion.
+"""
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import OccupancyGrid, Path

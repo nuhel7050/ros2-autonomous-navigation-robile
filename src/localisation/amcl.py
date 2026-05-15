@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""Adaptive Monte Carlo Localization (AMCL) node.
+
+Simplified AMCL implementation using a particle filter for robot
+localization. Subscribes to LiDAR, odometry, and occupancy grid data
+to maintain a set of weighted particles representing possible robot
+poses, and publishes the estimated pose.
+"""
 
 import rclpy
 from rclpy.node import Node
@@ -11,6 +18,7 @@ import math
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 class Particle:
+    """Lightweight particle representation with position, heading, and weight."""
     def __init__(self, x, y, theta, weight):
         self.x = x
         self.y = y
@@ -18,6 +26,17 @@ class Particle:
         self.weight = weight
 
 class AMCL(Node):
+    """ROS2 AMCL localization node.
+
+    Subscribes:
+        /scan (LaserScan): LiDAR measurements for weight calculation.
+        /odom (Odometry): Wheel odometry for motion prediction.
+        /map (OccupancyGrid): Static occupancy grid.
+
+    Publishes:
+        /particle_cloud (PoseArray): Current particle distribution.
+        /estimated_pose (PoseStamped): Mean pose estimate.
+    """
     def __init__(self):
         super().__init__('amcl')
         self.create_subscription(LaserScan, 'scan', self.laser_callback, 10)

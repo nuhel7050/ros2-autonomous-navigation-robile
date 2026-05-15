@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""AMCL structure template with pseudocode placeholders.
+
+Provides the class skeleton and method signatures for the AMCL
+localization algorithm with pseudocode instructions in docstrings
+for implementing the weight calculation and resampling steps.
+"""
 
 import rclpy
 from rclpy.node import Node
@@ -11,6 +17,7 @@ import math
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 class Particle:
+    """Lightweight particle representation with position, heading, and weight."""
     def __init__(self, x, y, theta, weight):
         self.x = x
         self.y = y
@@ -18,6 +25,17 @@ class Particle:
         self.weight = weight
 
 class AMCL(Node):
+    """AMCL localization node template with pseudocode stubs.
+
+    Subscribes:
+        /scan (LaserScan): LiDAR measurements.
+        /odom (Odometry): Wheel odometry.
+        /map (OccupancyGrid): Static occupancy grid.
+
+    Publishes:
+        /particle_cloud (PoseArray): Particle distribution.
+        /estimated_pose (PoseStamped): Mean pose estimate.
+    """
     def __init__(self):
         super().__init__('amcl')
         self.create_subscription(LaserScan, 'scan', self.laser_callback, 10)

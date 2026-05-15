@@ -1,3 +1,9 @@
+"""Standalone A* path planner node for frontier-based exploration.
+
+Subscribes to SLAM pose and goal pose, computes a shortest path on the
+occupancy grid using A* search, and publishes the result as a nav_msgs/Path.
+"""
+
 import numpy as np
 from heapq import heappop, heappush
 import rclpy
@@ -9,6 +15,7 @@ import math
 import tf_transformations
 
 class AStarNode:
+    """Priority queue element for A* search with parent backtracking."""
     def __init__(self, state, g, f, parent=None):
         self.state = state
         self.g = g
@@ -20,6 +27,16 @@ class AStarNode:
 
 
 class AStarPathPlanner(Node):
+    """ROS2 node implementing A* path planning for exploration.
+
+    Subscribes:
+        /map (OccupancyGrid): Occupancy grid from SLAM.
+        /goal_pose (PoseStamped): Target goal from the exploration node.
+        /pose (PoseWithCovarianceStamped): Current robot pose from SLAM.
+
+    Publishes:
+        /path (Path): Computed path from start to goal.
+    """
     def __init__(self):
         super().__init__('path_planner')
 

@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Combined A* global planner with potential field local controller.
+
+Integrates A* path planning on an inflated occupancy grid with a
+potential field local controller for real-time obstacle avoidance.
+Supports dynamic replanning when LiDAR detects path obstructions.
+"""
 
 # =========================
 #         IMPORTS
@@ -35,6 +41,16 @@ np.set_printoptions(threshold=sys.maxsize)
 #    FIRST CLASS
 # =========================
 class PotentialFieldPathPlanning(Node):
+    """ROS2 node implementing basic potential field navigation.
+
+    Subscribes:
+        /scan (LaserScan): LiDAR for obstacle detection.
+        /odom (Odometry): Robot position tracking.
+
+    Publishes:
+        /cmd_vel (Twist): Velocity commands.
+        /goal_pose (PoseStamped): Goal relay for external planners.
+    """
     def __init__(self):
         super().__init__('potential_node')
 
@@ -98,6 +114,23 @@ class PotentialFieldPathPlanning(Node):
 #    SECOND CLASS
 # =========================
 class OdometryMotionModel(Node):
+    """ROS2 node combining A* planning with potential field control.
+
+    Performs A* path planning on an inflated occupancy grid, follows
+    the computed waypoints using potential field forces, and dynamically
+    replans when LiDAR detects obstacles blocking the path.
+
+    Subscribes:
+        /map (OccupancyGrid): Occupancy grid from SLAM.
+        /odom (Odometry): Robot odometry.
+        /goalpose (PoseStamped): Target goal position.
+        /scan (LaserScan): LiDAR for obstacle avoidance and replanning.
+
+    Publishes:
+        /path_line (Path): Planned path visualization.
+        /path_points (PoseArray): Waypoints for path following.
+        /cmd_vel (Twist): Velocity commands.
+    """
     def __init__(self):
         """Initializes the OdometryMotionModel node."""
         qos_profile = QoSProfile(

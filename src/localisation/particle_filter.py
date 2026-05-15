@@ -1,3 +1,11 @@
+"""Monte Carlo Localization (MCL) using a particle filter.
+
+Implements a particle filter for robot localization within a known
+occupancy grid map. Uses odometry-based motion prediction, LiDAR
+ray-casting for sensor model updates, and systematic resampling
+with best-particle reinforcement.
+"""
+
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile
@@ -12,11 +20,27 @@ import sys
 MS = 0.001
 
 class ParticleEntity:
+    """Container for a single particle with pose and importance weight."""
+
     def __init__(self, pose: Pose, weight: float):
         self.pose = pose
         self.weight = weight
 
 class ParticleFilterLocalizer(Node):
+    """ROS2 node implementing Monte Carlo Localization.
+
+    Subscribes:
+        /initialpose (PoseWithCovarianceStamped): Manual pose initialization.
+        /odom (Odometry): Wheel odometry for motion prediction.
+        /scan (LaserScan): LiDAR measurements for weight updates.
+        /map (OccupancyGrid): Static occupancy grid for ray-casting.
+
+    Publishes:
+        /mcl_path (Path): Estimated trajectory from the filter.
+        /odom_path (Path): Raw odometry trajectory for comparison.
+        /particlecloud (PoseArray): Current particle distribution.
+        /mcl_pose (Odometry): Best-particle pose estimate.
+    """
 
     def __init__(self):
         try:
